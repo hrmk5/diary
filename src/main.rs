@@ -9,10 +9,10 @@ mod page;
 
 use std::io;
 use clap::{Arg, App, SubCommand};
-use page::{PageLoader};
+use page::{PageManager};
 
 fn list(no_color: bool) {
-    let loader = PageLoader::new("C:/Users/Shinsuke/Documents/diary");
+    let loader = PageManager::new("C:/Users/Shinsuke/Documents/diary");
     let headers = match loader.load_headers() {
         Ok(headers) => headers,
         Err(err) => {
@@ -22,6 +22,11 @@ fn list(no_color: bool) {
     };
 
     println!("{:?}", headers);
+
+    if let Err(err) = loader.write_headers(&headers) {
+        println!("エラーが発生しました: {}", err);
+        return;
+    }
 }
 
 fn main() {

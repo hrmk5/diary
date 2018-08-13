@@ -1,7 +1,7 @@
 
 use std::fs;
 use std::io;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path};
 
 use failure;
@@ -9,7 +9,7 @@ use serde_json;
 use serde_json::{Value};
 use chrono::prelude::{DateTime, Utc};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PageHeader {
     title: String,
     insert_title: bool,
@@ -24,13 +24,13 @@ pub struct Page {
     text: String,
 }
 
-pub struct PageLoader {
+pub struct PageManager {
     directory: String,
 }
 
-impl PageLoader {
-    pub fn new(directory: &str) -> PageLoader {
-        PageLoader{
+impl PageManager {
+    pub fn new(directory: &str) -> PageManager {
+        PageManager{
             directory: String::from(directory),
         }
     }
@@ -46,5 +46,17 @@ impl PageLoader {
         let headers: Vec<PageHeader> = serde_json::from_str(&contents)?;
 
         Ok(headers)
+    }
+
+    // すべてのページを書き込む
+    pub fn write_headers(&self, headers: &Vec<PageHeader>) -> Result<(), failure::Error> {
+        // シリアライズ
+        let json = serde_json::to_string(headers)?;
+
+        // JSON ファイルに書き込み
+        let mut file = fs::File::create(Path::new(&self.directory).join("headers.json"))?;
+        file.write_all(json.as_bytes())?;
+
+        Ok(())
     }
 }
