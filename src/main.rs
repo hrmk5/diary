@@ -1,39 +1,37 @@
 #[macro_use] extern crate serde_derive;
-#[macro_use] extern crate serde_json;
+#[macro_use] extern crate failure;
 extern crate toml;
-extern crate failure;
 extern crate clap;
 extern crate chrono;
 extern crate serde;
 
-use std::io;
-use std::env;
+use std::io::{Read};
+use std::fs;
 use std::path::Path;
+use std::env;
 
 use clap::{Arg, App, SubCommand};
 
-use page::{PageManager};
+use page::{Page};
 use config::{Config};
 
 mod page;
 mod config;
 
-fn list(no_color: bool) {
-    let loader = PageManager::new("C:/Users/Shinsuke/Documents/diary");
-    let headers = match loader.load_headers() {
-        Ok(headers) => headers,
+fn list(_no_color: bool) {
+    let mut file = fs::File::open("C:/Users/Shinsuke/Documents/diary/example.diary").unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+
+    let page = match Page::from_str(&contents, "example") {
+        Ok(page) => page,
         Err(err) => {
-            println!("エラーが発生しました: {}", err);
+            println!("{}", err);
             return;
         },
     };
 
-    println!("{:?}", headers);
-
-    if let Err(err) = loader.write_headers(&headers) {
-        println!("エラーが発生しました: {}", err);
-        return;
-    }
+    println!("{:?}", page);
 }
 
 fn get_app_dir() -> Result<String, failure::Error> {

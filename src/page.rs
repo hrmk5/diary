@@ -1,13 +1,22 @@
-
-use std::fs;
-use std::io;
-use std::io::{Read, Write};
-use std::path::{Path};
-
-use failure;
-use serde_json;
-use serde_json::{Value};
+use toml;
 use chrono::prelude::{DateTime, Utc};
+
+#[derive(Debug, Fail)]
+pub enum PageError {
+    #[fail(display = "Failed to parse page: {}", _0)]
+    ParseError(String),
+
+    #[fail(display = "Failed to deserialize toml: {}", error)]
+    DeserializeTomlError {
+        error: toml::de::Error,
+    },
+}
+
+impl From<toml::de::Error> for PageError {
+    fn from(error: toml::de::Error) -> Self {
+        PageError::DeserializeTomlError { error }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PageHeader {
@@ -16,47 +25,36 @@ pub struct PageHeader {
     author: String,
     created: DateTime<Utc>,
     updated: Vec<DateTime<Utc>>,
-    filename: String,
+    memo: bool,
+    prev: String,
+    next: String,
 }
 
+#[derive(Debug)]
 pub struct Page {
+    id: String,
     header: PageHeader,
     text: String,
 }
 
-pub struct PageManager {
-    directory: String,
-}
-
-impl PageManager {
-    pub fn new(directory: &str) -> PageManager {
-        PageManager{
-            directory: String::from(directory),
+impl Page {
+    pub fn from_str(s: &str, id: &str) -> Result<Page, PageError> {
+        // --- で分割
+        let tmp: Vec<&str> = s.splitn(3, "---").collect();
+        if tmp.len() < 3 {
+            return Err(PageError::ParseError(String::from("Header or text does not exists")));
         }
-    }
 
-    // すべてのページを読み込む
-    pub fn load_headers(&self) -> Result<Vec<PageHeader>, failure::Error> {
-        // JSON ファイルを読み込む
-        let mut file = fs::File::open(Path::new(&self.directory).join("headers.json"))?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+        let toml_str = tmp[1];
+        let text = tmp[2];
 
-        // JSON を解析
-        let headers: Vec<PageHeader> = serde_json::from_str(&contents)?;
+        // ヘッダの TOML をデシリアライズ
+        let header: PageHeader = toml::from_str(toml_str)?;
 
-        Ok(headers)
-    }
-
-    // すべてのページを書き込む
-    pub fn write_headers(&self, headers: &Vec<PageHeader>) -> Result<(), failure::Error> {
-        // シリアライズ
-        let json = serde_json::to_string(headers)?;
-
-        // JSON ファイルに書き込み
-        let mut file = fs::File::create(Path::new(&self.directory).join("headers.json"))?;
-        file.write_all(json.as_bytes())?;
-
-        Ok(())
+        Ok(Page {
+            id: id.to_string(),
+            header,
+            text: text.to_string().trim().to_string(),
+        })
     }
 }
