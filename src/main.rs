@@ -5,34 +5,16 @@ extern crate clap;
 extern crate chrono;
 extern crate serde;
 
-use std::io::{Read};
-use std::fs;
 use std::path::Path;
 use std::env;
 
 use clap::{Arg, App, SubCommand};
 
-use page::{Page};
 use config::{Config};
 
 mod page;
 mod config;
-
-fn list(_no_color: bool) {
-    let mut file = fs::File::open("C:/Users/Shinsuke/Documents/diary/example.diary").unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-
-    let page = match Page::from_str(&contents, "example") {
-        Ok(page) => page,
-        Err(err) => {
-            println!("{}", err);
-            return;
-        },
-    };
-
-    println!("{:?}", page);
-}
+mod commands;
 
 fn get_app_dir() -> Result<String, failure::Error> {
     if cfg!(target_os = "windows") {
@@ -68,11 +50,9 @@ fn main() {
         return;
     }
 
-    println!("{:?}", config);
-    
     if let Some(matches) = matches.subcommand_matches("ls") {
         let no_color = matches.is_present("no-color");
-        list(no_color);
+        commands::list(&app_dir, no_color);
         return;
     }
 }

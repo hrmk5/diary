@@ -20,21 +20,21 @@ impl From<toml::de::Error> for PageError {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PageHeader {
-    title: String,
-    insert_title: bool,
-    author: String,
-    created: DateTime<Utc>,
-    updated: Vec<DateTime<Utc>>,
-    memo: bool,
-    prev: String,
-    next: String,
+    pub title: String,
+    pub insert_title: bool,
+    pub author: String,
+    pub created: DateTime<Utc>,
+    pub updated: Vec<DateTime<Utc>>,
+    pub memo: bool,
+    pub prev: String,
+    pub next: String,
 }
 
 #[derive(Debug)]
 pub struct Page {
-    id: String,
-    header: PageHeader,
-    text: String,
+    pub id: String,
+    pub header: PageHeader,
+    pub text: String,
 }
 
 impl Page {
