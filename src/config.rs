@@ -7,7 +7,7 @@ use failure;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    editor: String,
+    pub editor: String,
 }
 
 impl Config {

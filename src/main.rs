@@ -38,21 +38,34 @@ fn main() {
                     .about("list diary")
                     .arg(Arg::with_name("--no-color")
                          .help("disable color")))
+        .subcommand(SubCommand::with_name("new")
+                    .about("create new page"))
         .get_matches();
 
     // 設定を読み込む
     let app_dir = get_app_dir().unwrap();
     let config_path = Path::new(&app_dir).join("config.toml");
     let config_path = config_path.as_path();
-    let config = Config::load_from_file(config_path);
-    if let Err(err) = config {
-        println!("Failed to load config '{}': {}", config_path.to_string_lossy(), err);
-        return;
-    }
+    let config = match Config::load_from_file(config_path) {
+        Ok(config) => config,
+        Err(err) => {
+            println!("Failed to load config '{}': {}", config_path.to_string_lossy(), err);
+            return;
+        },
+    };
 
     if let Some(matches) = matches.subcommand_matches("ls") {
         let no_color = matches.is_present("no-color");
-        commands::list(&app_dir, no_color);
+        if let Err(err) = commands::list(&app_dir, no_color) {
+            println!("{}", err);
+        }
+        return;
+    }
+
+    if let Some(_matches) = matches.subcommand_matches("new") {
+        if let Err(err) = commands::create_new(&config.editor) {
+            println!("{}", err);
+        }
         return;
     }
 }
