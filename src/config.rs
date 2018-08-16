@@ -11,7 +11,7 @@ pub struct Config {
 }
 
 impl Config {
-    // TOML 形式のファイルを読み込む
+    // Load TOML file
     pub fn load_from_file(filepath: &Path) -> Result<Config, failure::Error> {
         let mut file = fs::File::open(filepath)?;
         let mut contents = String::new();

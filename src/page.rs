@@ -50,7 +50,7 @@ pub struct Page {
 
 impl Page {
     pub fn from_str(s: &str, id: &str) -> Result<Page, PageError> {
-        // --- で分割
+        // Split with ---
         let tmp: Vec<&str> = s.splitn(3, "---").collect();
         if tmp.len() < 3 {
             return Err(PageError::ParseError(String::from("Header or text does not exists")));
@@ -59,7 +59,7 @@ impl Page {
         let toml_str = tmp[1];
         let text = tmp[2];
 
-        // ヘッダの TOML をデシリアライズ
+        // Deserialize header TOML
         let header: PageHeader = toml::from_str(toml_str)?;
 
         Ok(Page {

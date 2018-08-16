@@ -38,7 +38,6 @@ struct TemporaryPage {
 
 impl TemporaryPage {
     pub fn from_str(s: &str) -> Result<TemporaryPage, PageError> {
-        // --- で分割
         let tmp: Vec<&str> = s.splitn(3, "---").collect();
         if tmp.len() < 3 {
             return Err(PageError::ParseError(String::from("Header or text does not exists")));
@@ -47,7 +46,7 @@ impl TemporaryPage {
         let toml_str = tmp[1];
         let text = tmp[2];
 
-        // ヘッダの TOML をデシリアライズ
+        // deserialize header toml
         let header: TemporaryPageHeader = toml::from_str(toml_str)?;
 
         Ok(TemporaryPage {
@@ -78,22 +77,21 @@ impl TemporaryPage {
     }
 }
 
-// ページを保存しているディレクトリ名
+// Directory name to save pages
 const PAGES_DIR: &str = "pages";
-// ページファイルの拡張子
+// Page file extension
 const PAGE_EXTENSION: &str = "page";
-// 先頭のページ ID を保存しているファイル名
+// File name to save head page id
 const HEAD_FILENAME: &str = "HEAD";
-// 一時ファイル
+// Temporary file to edit page
 const TEMPORARY_FILE_TO_EDIT: &str = "EDIT_PAGE";
 
-// 使用可能な ID かどうか確認する
+// Check if id is valid
 fn is_valid_id(id: &str) -> Result<(), String> {
     if id == "" {
         return Err(String::from("empty id is unavaialble"));
     }
 
-    // NULL は使えない
     if id == "NULL" {
         return Err(String::from("`NULL` is unavailable"));
     }
@@ -112,11 +110,11 @@ fn read_file(path: &PathBuf) -> Result<String, io::Error> {
 }
 
 fn get_head_id(directory: &str) -> Result<String, String> {
-    // 先頭のページ ID を保存しているファイルパスを取得
+    // Get filepath to save head page id
     let head_filepath = Path::new(directory).join(HEAD_FILENAME);
     let head_filepath = head_filepath.as_path();
 
-    // 先頭のページ ID を取得
+    // Get head page id
     let mut file = match fs::File::open(head_filepath) {
         Ok(file) => file,
         Err(err) => return Err(format!("Unable to open HEAD file `{}`: {}", head_filepath.to_string_lossy(), err)),
@@ -131,11 +129,11 @@ fn get_head_id(directory: &str) -> Result<String, String> {
 }
 
 fn get_page_by_id(directory: &str, id: &str) -> Result<Page, String> {
-    // ページファイルのパスを取得
+    // Get page filepath
     let filepath = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
     let filepath = filepath.as_path();
 
-    // ページファイルを読み込み
+    // Read page file
     let mut file = match fs::File::open(filepath) {
         Ok(file) => file,
         Err(err) => return Err(format!("Unable to open page file `{}`: {}", filepath.to_string_lossy(), err)),
@@ -146,7 +144,7 @@ fn get_page_by_id(directory: &str, id: &str) -> Result<Page, String> {
         return Err(format!("Unable to read page file `{}`: {}", filepath.to_string_lossy(), err));
     }
 
-    // ページファイルの文字列をパース
+    // Parse page file contents
     let page = match Page::from_str(&contents, id) {
         Ok(page) => page,
         Err(err) => return Err(format!("{}", err)),
@@ -175,10 +173,8 @@ pub fn list(directory: &str, _no_color: bool) -> Result<(), String> {
     loop {
         let page = get_page_by_id(directory, &prev_id)?;
 
-        // ページの情報を出力
         println!("{}: {}", page.id, page.header.title);
 
-        // 前のページ ID が "NULL" だったらループを抜ける
         prev_id = page.header.prev;
         if prev_id == "NULL" {
             break;
@@ -192,7 +188,7 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     let id = match matches.value_of("id") {
         Some(id) => id.to_string(),
         None => {
-            // 現在の日付を取得
+            // Return current date
             let now = Local::now();
             now.format("%Y-%m-%d").to_string()
         },
@@ -202,16 +198,15 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
         return Err(format!("Invalid ID: {}", err));
     }
 
-    // すでに存在する場合はエラー
+    // If page file already exists
     let new_file_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
     if new_file_path.exists() {
         return Err(format!("`{}` already exists", id));
     }
 
-    // 先頭ページの ID を取得
+    // Get head id
     let head_id = get_head_id(directory)?;
     
-    // 変更するページ
     let mut page = Page {
         id: id.clone(),
         header: PageHeader {
@@ -227,7 +222,7 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
         text: String::new(),
     };
 
-    // 一時ファイルが存在していなかったら作成
+    // Create if temporary file to edit does not exists
     let file_to_edit_path = Path::new(directory).join(TEMPORARY_FILE_TO_EDIT);
     if !file_to_edit_path.exists() {
         let mut file_to_edit = fs::File::create(&file_to_edit_path)
@@ -240,7 +235,7 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
             .map_err(|err| format!("Unable to write initial page `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
     }
 
-    // エディタを起動
+    // Execute editor
     let mut command =
         if cfg!(target_os = "windows") {
             Command::new("cmd")
@@ -257,12 +252,12 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     let status = command.wait()
         .map_err(|err| format!("Unable to wait editor `{}`: {}", &config.editor, err))?;
 
-    // コマンドが失敗したらエラー
+    // Error if exit code is not 0
     if !status.success() {
         return Err(format!("Failed editor `{}`", &config.editor));
     }
 
-    // ページファイルに書き込み
+    // Write to page file
     let mut file_to_edit = fs::File::open(&file_to_edit_path)
         .map_err(|err| format!("Unable to open temporary file to edit `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
 
@@ -273,18 +268,18 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     let temp_page = TemporaryPage::from_str(&contents).map_err(|err| format!("{}", err))?;
     temp_page.apply(&mut page);
 
-    // 更新日時を更新
+    // Update updated times of header
     page.header.updated.push(Utc::now());
 
     write_page(directory, &id, &page)?;
 
-    // 先頭ページの next を書き換えて保存する
+    // Update next of head page
     let mut head_page = get_page_by_id(directory, &head_id)?;
     head_page.header.next = id.clone();
 
     write_page(directory, &head_id, &head_page)?;
 
-    // HEAD ファイルを書き換える
+    // Update head file
     let head_path = Path::new(directory).join(HEAD_FILENAME);   
     let mut head_file = fs::File::create(&head_path)
         .map_err(|err| format!("Unable to open head file `{}`: {}", head_path.to_string_lossy(), err))?;
