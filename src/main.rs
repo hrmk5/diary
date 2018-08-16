@@ -39,6 +39,8 @@ fn main() {
                     .arg(Arg::with_name("--no-color")
                          .help("disable color")))
         .subcommand(SubCommand::with_name("new")
+                    .arg(Arg::with_name("id")
+                         .index(1))
                     .about("create new page"))
         .get_matches();
 
@@ -62,8 +64,8 @@ fn main() {
         return;
     }
 
-    if let Some(_matches) = matches.subcommand_matches("new") {
-        if let Err(err) = commands::create_new(&config.editor) {
+    if let Some(matches) = matches.subcommand_matches("new") {
+        if let Err(err) = commands::create_new(&app_dir, &config, &matches) {
             println!("{}", err);
         }
         return;

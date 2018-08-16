@@ -10,11 +10,22 @@ pub enum PageError {
     DeserializeTomlError {
         error: toml::de::Error,
     },
+
+    #[fail(display = "Failed to serialize toml: {}", error)]
+    SerializeTomlError {
+        error: toml::ser::Error,
+    },
 }
 
 impl From<toml::de::Error> for PageError {
     fn from(error: toml::de::Error) -> Self {
         PageError::DeserializeTomlError { error }
+    }
+}
+
+impl From<toml::ser::Error> for PageError {
+    fn from(error: toml::ser::Error) -> Self {
+        PageError::SerializeTomlError { error }
     }
 }
 
@@ -56,5 +67,49 @@ impl Page {
             header,
             text: text.to_string().trim().to_string(),
         })
+    }
+
+    pub fn to_str(&self) -> Result<String, PageError> {
+        let header_toml = toml::to_string(&self.header)?;       
+
+        Ok(format!("---\n{}---\n{}", header_toml, self.text))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::prelude::*;
+
+    #[test]
+    fn page_to_str() {
+        let page = Page {
+            id: "example".to_string(),
+            header: PageHeader {
+                title: "taitoru".to_string(),
+                insert_title: true,
+                author: "a".to_string(),
+                created: Utc.ymd(2018, 8, 15).and_hms(17, 52, 11),
+                updated: vec![Utc.ymd(2018, 8, 15).and_hms(17, 52, 44)],
+                memo: true,
+                prev: "NULL".to_string(),
+                next: "NULL".to_string(),
+            },
+            text: "本文".to_string(),
+        };
+
+        let expected = r#"---
+title = "taitoru"
+insert_title = true
+author = "a"
+created = "2018-08-15T17:52:11Z"
+updated = ["2018-08-15T17:52:44Z"]
+memo = true
+prev = "NULL"
+next = "NULL"
+---
+本文"#;
+
+        assert_eq!(page.to_str().unwrap(), expected);
     }
 }
