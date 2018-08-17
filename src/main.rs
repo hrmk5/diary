@@ -42,6 +42,10 @@ fn main() {
                     .arg(Arg::with_name("id")
                          .index(1))
                     .about("create new page"))
+        .subcommand(SubCommand::with_name("edit")
+                    .arg(Arg::with_name("id")
+                         .index(1))
+                    .about("edit page"))
         .get_matches();
 
     // Load config
@@ -66,6 +70,13 @@ fn main() {
 
     if let Some(matches) = matches.subcommand_matches("new") {
         if let Err(err) = commands::create_new(&app_dir, &config, &matches) {
+            println!("{}", err);
+        }
+        return;
+    }
+
+    if let Some(matches) = matches.subcommand_matches("edit") {
+        if let Err(err) = commands::edit(&app_dir, &config, &matches) {
             println!("{}", err);
         }
         return;

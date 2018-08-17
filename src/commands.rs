@@ -208,7 +208,7 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     // If page file already exists
     let new_file_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
     if new_file_path.exists() {
-        return Err(format!("`{}` already exists", id));
+        return Err(format!("`{}` already exists. use `diary edit {}`", id, id));
     }
 
     // Get head id
@@ -296,4 +296,31 @@ fn edit_page(directory: &str, page: Page, editor: &str) -> Result<Page, String> 
     page.header.updated.push(Utc::now());
 
     Ok(page)
+}
+
+pub fn edit(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
+    let id = match matches.value_of("id") {
+        Some(id) => id.to_string(),
+        None => {
+            // Return current date
+            let now = Local::now();
+            now.format("%Y-%m-%d").to_string()
+        },
+    };
+
+    let new_file_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
+    if !new_file_path.exists() {
+        return Err(format!("`{}` does not exists. use `diary new {}`", id, id));
+    }
+
+    // Get page to edit
+    let page = get_page_by_id(directory, &id)?;
+
+    // Edit page
+    let page = edit_page(directory, page, &config.editor)?;
+
+    // Write page
+    write_page(directory, &id, &page)?;
+
+    Ok(())
 }
