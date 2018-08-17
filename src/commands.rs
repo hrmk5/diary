@@ -324,3 +324,31 @@ pub fn edit(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Res
 
     Ok(())
 }
+
+pub fn config(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> Result<(), String> {
+    let config_path = Path::new(directory).join("config.toml");
+
+    // Execute editor
+    let mut command =
+        if cfg!(target_os = "windows") {
+            Command::new("cmd")
+                .args(&["/c", &format!("{} {}", &config.editor, config_path.to_string_lossy())])
+                .spawn()
+                .map_err(|err| format!("Unable to execute editor `cmd /c {}`: {}", &config.editor, err))?
+        } else {
+            Command::new("sh")
+                .args(&["-c", &format!("{} {}", &config.editor, config_path.to_string_lossy())])
+                .spawn()
+                .map_err(|err| format!("Unable to execute editor `sh -c {}`: {}", &config.editor, err))?
+        };
+
+    let status = command.wait()
+        .map_err(|err| format!("Unable to wait editor `{}`: {}", &config.editor, err))?;
+
+    // Error if exit code is not 0
+    if !status.success() {
+        return Err(format!("Failed editor `{}`", config.editor));
+    }
+
+    Ok(())
+}

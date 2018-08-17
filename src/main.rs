@@ -46,6 +46,8 @@ fn main() {
                     .arg(Arg::with_name("id")
                          .index(1))
                     .about("edit page"))
+        .subcommand(SubCommand::with_name("config")
+                    .about("edit config file"))
         .get_matches();
 
     // Load config
@@ -64,6 +66,7 @@ fn main() {
         Some("ls") => commands::list,
         Some("new") => commands::create_new,
         Some("edit") => commands::edit,
+        Some("config") => commands::config,
         _ => panic!("Unknown subcommand"),
     };
 
