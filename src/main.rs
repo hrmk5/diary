@@ -60,25 +60,14 @@ fn main() {
         },
     };
 
-    if let Some(matches) = matches.subcommand_matches("ls") {
-        let no_color = matches.is_present("no-color");
-        if let Err(err) = commands::list(&app_dir, no_color) {
-            println!("{}", err);
-        }
-        return;
-    }
+    let func = match matches.subcommand_name() {
+        Some("ls") => commands::list,
+        Some("new") => commands::create_new,
+        Some("edit") => commands::edit,
+        _ => panic!("Unknown subcommand"),
+    };
 
-    if let Some(matches) = matches.subcommand_matches("new") {
-        if let Err(err) = commands::create_new(&app_dir, &config, &matches) {
-            println!("{}", err);
-        }
-        return;
-    }
-
-    if let Some(matches) = matches.subcommand_matches("edit") {
-        if let Err(err) = commands::edit(&app_dir, &config, &matches) {
-            println!("{}", err);
-        }
-        return;
+    if let Err(message) = func(&app_dir, &config, &matches) {
+        println!("{}", message);
     }
 }

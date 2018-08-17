@@ -173,7 +173,7 @@ fn write_page(directory: &str, id: &str, page: &Page) -> Result<(), String> {
     Ok(())
 }
 
-pub fn list(directory: &str, _no_color: bool) -> Result<(), String> {
+pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> Result<(), String> {
     let head_id = get_head_id(directory)?;
 
     let mut prev_id = head_id;
