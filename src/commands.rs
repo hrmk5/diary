@@ -100,13 +100,20 @@ fn is_valid_id(id: &str) -> Result<(), String> {
 }
 
 fn read_file(path: &PathBuf) -> Result<String, io::Error> {
-    let path = path.as_path();
-    let mut file = fs::File::create(path)?;
+    let mut file = fs::File::open(path)?;
 
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
     Ok(contents)
+}
+
+fn write_file(path: &PathBuf, contents: &str) -> Result<(), io::Error> {
+    let mut file = fs::File::create(path)?;
+
+    file.write_all(contents.as_bytes())?;
+
+    Ok(())
 }
 
 fn get_head_id(directory: &str) -> Result<String, String> {
@@ -207,7 +214,7 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     // Get head id
     let head_id = get_head_id(directory)?;
     
-    let mut page = Page {
+    let page = Page {
         id: id.clone(),
         header: PageHeader {
             title: id.to_string(),
@@ -222,55 +229,10 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
         text: String::new(),
     };
 
-    // Create if temporary file to edit does not exists
-    let file_to_edit_path = Path::new(directory).join(TEMPORARY_FILE_TO_EDIT);
-    if !file_to_edit_path.exists() {
-        let mut file_to_edit = fs::File::create(&file_to_edit_path)
-            .map_err(|err| format!("Unable to open temporary file to edit `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
+    // Edit page
+    let page = edit_page(directory, page, &config.editor)?;
 
-        let temp_page = TemporaryPage::from_page(&page);
-
-        let page_str = temp_page.to_str().map_err(|err| format!("Unable to initialize page: {}", err))?;
-        file_to_edit.write_all(page_str.as_bytes())
-            .map_err(|err| format!("Unable to write initial page `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
-    }
-
-    // Execute editor
-    let mut command =
-        if cfg!(target_os = "windows") {
-            Command::new("cmd")
-                .args(&["/c", &format!("{} {}", &config.editor, file_to_edit_path.to_string_lossy())])
-                .spawn()
-                .map_err(|err| format!("Unable to execute editor `cmd /c {}`: {}", &config.editor, err))?
-        } else {
-            Command::new("sh")
-                .args(&["-c", &format!("{} {}", &config.editor, file_to_edit_path.to_string_lossy())])
-                .spawn()
-                .map_err(|err| format!("Unable to execute editor `sh -c {}`: {}", &config.editor, err))?
-        };
-
-    let status = command.wait()
-        .map_err(|err| format!("Unable to wait editor `{}`: {}", &config.editor, err))?;
-
-    // Error if exit code is not 0
-    if !status.success() {
-        return Err(format!("Failed editor `{}`", &config.editor));
-    }
-
-    // Write to page file
-    let mut file_to_edit = fs::File::open(&file_to_edit_path)
-        .map_err(|err| format!("Unable to open temporary file to edit `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
-
-    let mut contents = String::new();
-    file_to_edit.read_to_string(&mut contents)
-        .map_err(|err| format!("Unable to read file to edit `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
-
-    let temp_page = TemporaryPage::from_str(&contents).map_err(|err| format!("{}", err))?;
-    temp_page.apply(&mut page);
-
-    // Update updated times of header
-    page.header.updated.push(Utc::now());
-
+    // Write page
     write_page(directory, &id, &page)?;
 
     // Update next of head page
@@ -288,4 +250,50 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
         .map_err(|err| format!("Unable to write head to file `{}`: {}", head_path.to_string_lossy(), err))?;
 
     Ok(())
+}
+
+fn edit_page(directory: &str, page: Page, editor: &str) -> Result<Page, String> {
+    let mut page = page;
+
+    let temp_page = TemporaryPage::from_page(&page);
+    let file_to_edit_path = Path::new(directory).join(TEMPORARY_FILE_TO_EDIT);
+
+    // Write to temporary page file
+    let temp_page_str = temp_page.to_str().unwrap();
+    write_file(&file_to_edit_path, &temp_page_str)
+        .map_err(|err| format!("Unable to write to temporary page file `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
+
+    // Execute editor
+    let mut command =
+        if cfg!(target_os = "windows") {
+            Command::new("cmd")
+                .args(&["/c", &format!("{} {}", editor, file_to_edit_path.to_string_lossy())])
+                .spawn()
+                .map_err(|err| format!("Unable to execute editor `cmd /c {}`: {}", editor, err))?
+        } else {
+            Command::new("sh")
+                .args(&["-c", &format!("{} {}", editor, file_to_edit_path.to_string_lossy())])
+                .spawn()
+                .map_err(|err| format!("Unable to execute editor `sh -c {}`: {}", editor, err))?
+        };
+
+    let status = command.wait()
+        .map_err(|err| format!("Unable to wait editor `{}`: {}", editor, err))?;
+
+    // Error if exit code is not 0
+    if !status.success() {
+        return Err(format!("Failed editor `{}`", editor));
+    }
+
+    // Read and parse temporary file
+    let contents = read_file(&file_to_edit_path)
+        .map_err(|err| format!("Unable to read temporary file `{}`: {}", file_to_edit_path.to_string_lossy(), err))?;
+
+    let temp_page = TemporaryPage::from_str(&contents).map_err(|err| format!("{}", err))?;
+    temp_page.apply(&mut page);
+
+    // Update updated times of header
+    page.header.updated.push(Utc::now());
+
+    Ok(page)
 }
