@@ -70,7 +70,9 @@ fn main() {
         _ => panic!("Unknown subcommand"),
     };
 
-    if let Err(message) = func(&app_dir, &config, &matches) {
-        println!("{}", message);
+    if let Some(matches) = matches.subcommand_matches(matches.subcommand_name().unwrap()) {
+        if let Err(message) = func(&app_dir, &config, &matches) {
+            println!("{}", message);
+        }
     }
 }
