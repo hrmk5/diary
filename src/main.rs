@@ -15,6 +15,7 @@ use config::{Config};
 mod page;
 mod config;
 mod commands;
+mod utils;
 
 fn get_app_dir() -> Result<String, failure::Error> {
     if cfg!(target_os = "windows") {
