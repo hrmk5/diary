@@ -62,15 +62,23 @@ fn main() {
         },
     };
 
-    let func = match matches.subcommand_name() {
+    let name = matches.subcommand_name();
+    let func = match name {
         Some("ls") => commands::list,
         Some("new") => commands::create_new,
         Some("edit") => commands::edit,
         Some("config") => commands::config,
-        _ => panic!("Unknown subcommand"),
+        _ => commands::diary,
     };
 
-    if let Some(matches) = matches.subcommand_matches(matches.subcommand_name().unwrap()) {
+    if name == None {
+        if let Err(message) = func(&app_dir, &config, &matches) {
+            println!("{}", message);
+        }
+        return;
+    }
+
+    if let Some(matches) = matches.subcommand_matches(name.unwrap()) {
         if let Err(message) = func(&app_dir, &config, &matches) {
             println!("{}", message);
         }

@@ -160,47 +160,7 @@ fn get_page_by_id(directory: &str, id: &str) -> Result<Page, String> {
     Ok(page)
 }
 
-fn write_page(directory: &str, id: &str, page: &Page) -> Result<(), String> {
-    let path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
-    let mut page_file = fs::File::create(&path)
-        .map_err(|err| format!("Unable to open page file `{}`: {}", path.to_string_lossy(), err))?;
-
-    let page_str = page.to_str().map_err(|err| format!("Unable to serialize page `{}`: {}", id, err))?;
-
-    page_file.write_all(page_str.as_bytes())
-        .map_err(|err| format!("Unable to write page to file `{}`: {}", path.to_string_lossy(), err))?;
-
-    Ok(())
-}
-
-pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> Result<(), String> {
-    let head_id = get_head_id(directory)?;
-
-    let mut prev_id = head_id;
-    loop {
-        let page = get_page_by_id(directory, &prev_id)?;
-
-        println!("{}: {}", page.id, page.header.title);
-
-        prev_id = page.header.prev;
-        if prev_id == "NULL" {
-            break;
-        }
-    }
-
-    Ok(())
-}
-
-pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
-    let id = match matches.value_of("id") {
-        Some(id) => id.to_string(),
-        None => {
-            // Return current date
-            let now = Local::now();
-            now.format("%Y-%m-%d").to_string()
-        },
-    };
-
+fn create_new_page(directory: &str, id: &str, editor: &str) -> Result<(), String> {
     if let Err(err) = is_valid_id(&id) {
         return Err(format!("Invalid ID: {}", err));
     }
@@ -215,7 +175,7 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     let head_id = get_head_id(directory)?;
     
     let page = Page {
-        id: id.clone(),
+        id: id.clone().to_string(),
         header: PageHeader {
             title: id.to_string(),
             insert_title: true,
@@ -230,14 +190,14 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
     };
 
     // Edit page
-    let page = edit_page(directory, page, &config.editor)?;
+    let page = edit_page(directory, page, editor)?;
 
     // Write page
     write_page(directory, &id, &page)?;
 
     // Update next of head page
     let mut head_page = get_page_by_id(directory, &head_id)?;
-    head_page.header.next = id.clone();
+    head_page.header.next = id.clone().to_string();
 
     write_page(directory, &head_id, &head_page)?;
 
@@ -298,6 +258,71 @@ fn edit_page(directory: &str, page: Page, editor: &str) -> Result<Page, String> 
     Ok(page)
 }
 
+fn edit_page_by_id(directory: &str, id: &str, editor: &str) -> Result<(), String> {
+    let new_file_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
+    if !new_file_path.exists() {
+        return Err(format!("`{}` does not exists. use `diary new {}`", id, id));
+    }
+
+    // Get page to edit
+    let page = get_page_by_id(directory, id)?;
+
+    // Edit page
+    let page = edit_page(directory, page, editor)?;
+
+    // Write page
+    write_page(directory, &id, &page)?;
+
+    Ok(())
+}
+
+fn write_page(directory: &str, id: &str, page: &Page) -> Result<(), String> {
+    let path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
+    let mut page_file = fs::File::create(&path)
+        .map_err(|err| format!("Unable to open page file `{}`: {}", path.to_string_lossy(), err))?;
+
+    let page_str = page.to_str().map_err(|err| format!("Unable to serialize page `{}`: {}", id, err))?;
+
+    page_file.write_all(page_str.as_bytes())
+        .map_err(|err| format!("Unable to write page to file `{}`: {}", path.to_string_lossy(), err))?;
+
+    Ok(())
+}
+
+pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> Result<(), String> {
+    let head_id = get_head_id(directory)?;
+
+    let mut prev_id = head_id;
+    loop {
+        let page = get_page_by_id(directory, &prev_id)?;
+
+        println!("{}: {}", page.id, page.header.title);
+
+        prev_id = page.header.prev;
+        if prev_id == "NULL" {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
+    let id = match matches.value_of("id") {
+        Some(id) => id.to_string(),
+        None => {
+            // Return current date
+            let now = Local::now();
+            now.format("%Y-%m-%d").to_string()
+        },
+    };
+
+    create_new_page(directory, &id, &config.editor)?;
+
+    Ok(())
+}
+
+
 pub fn edit(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
     let id = match matches.value_of("id") {
         Some(id) => id.to_string(),
@@ -308,19 +333,7 @@ pub fn edit(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Res
         },
     };
 
-    let new_file_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
-    if !new_file_path.exists() {
-        return Err(format!("`{}` does not exists. use `diary new {}`", id, id));
-    }
-
-    // Get page to edit
-    let page = get_page_by_id(directory, &id)?;
-
-    // Edit page
-    let page = edit_page(directory, page, &config.editor)?;
-
-    // Write page
-    write_page(directory, &id, &page)?;
+    edit_page_by_id(directory, &id, &config.editor)?;
 
     Ok(())
 }
@@ -348,6 +361,22 @@ pub fn config(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> 
     // Error if exit code is not 0
     if !status.success() {
         return Err(format!("Failed editor `{}`", config.editor));
+    }
+
+    Ok(())
+}
+
+pub fn diary(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> Result<(), String> {
+    let now = Local::now();
+    let id = now.format("%Y-%m-%d").to_string();
+
+    let today_page_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
+    if today_page_path.exists() {
+        // Edit if today page file exists
+        edit_page_by_id(directory, &id, &config.editor)?;
+    } else {
+        // Create new if today page file does not exists
+        create_new_page(directory, &id, &config.editor)?;
     }
 
     Ok(())
