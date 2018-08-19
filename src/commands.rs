@@ -99,3 +99,24 @@ pub fn diary(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> R
 
     Ok(())
 }
+
+pub fn show(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
+    let id = match matches.value_of("id") {
+        Some(id) => id.to_string(),
+        None => {
+            // Return current date
+            let now = Local::now();
+            now.format("%Y-%m-%d").to_string()
+        },
+    };
+
+    let page = get_page_by_id(directory, &id)?;
+
+    if page.header.insert_title {
+        println!("# {}\n", page.header.title);
+    }
+
+    println!("{}", page.text);
+
+    Ok(())
+}

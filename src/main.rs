@@ -4,6 +4,7 @@ extern crate toml;
 extern crate clap;
 extern crate chrono;
 extern crate serde;
+extern crate colored;
 
 use std::path::Path;
 use std::env;
@@ -49,6 +50,10 @@ fn main() {
                     .about("edit page"))
         .subcommand(SubCommand::with_name("config")
                     .about("edit config file"))
+        .subcommand(SubCommand::with_name("show")
+                    .arg(Arg::with_name("id")
+                         .index(1))
+                    .about("show detail page"))
         .get_matches();
 
     // Load config
@@ -69,6 +74,7 @@ fn main() {
         Some("new") => commands::create_new,
         Some("edit") => commands::edit,
         Some("config") => commands::config,
+        Some("show") => commands::show,
         _ => commands::diary,
     };
 
