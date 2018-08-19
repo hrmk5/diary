@@ -3,6 +3,7 @@ use std::path::Path;
 
 use clap;
 use chrono::{Local};
+use colored::*;
 
 use config::Config;
 use utils::*;
@@ -14,7 +15,7 @@ pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> R
     loop {
         let page = get_page_by_id(directory, &prev_id)?;
 
-        println!("{}: {}", page.id, page.header.title);
+        println!("{} ({})", page.header.title, page.id.yellow());
 
         prev_id = page.header.prev;
         if prev_id == "NULL" {
@@ -117,6 +118,28 @@ pub fn show(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> Re
     }
 
     println!("{}", page.text);
+
+    Ok(())
+}
+
+pub fn search(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
+    let query = matches.value_of("query").unwrap();
+    let head_id = get_head_id(directory)?;
+
+    let mut prev_id = head_id;
+    loop {
+        let page = get_page_by_id(directory, &prev_id)?;
+
+        // Search
+        if page.text.contains(query) {
+            println!("{} ({})", page.header.title, page.id.yellow());
+        }
+
+        prev_id = page.header.prev;
+        if prev_id == "NULL" {
+            break;
+        }
+    }
 
     Ok(())
 }

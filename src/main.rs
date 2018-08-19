@@ -54,6 +54,11 @@ fn main() {
                     .arg(Arg::with_name("id")
                          .index(1))
                     .about("show detail page"))
+        .subcommand(SubCommand::with_name("search")
+                    .arg(Arg::with_name("query")
+                         .index(1)
+                         .required(true))
+                    .about("search from all pages"))
         .get_matches();
 
     // Load config
@@ -75,6 +80,7 @@ fn main() {
         Some("edit") => commands::edit,
         Some("config") => commands::config,
         Some("show") => commands::show,
+        Some("search") => commands::search,
         _ => commands::diary,
     };
 
