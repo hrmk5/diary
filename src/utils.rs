@@ -157,7 +157,7 @@ pub fn get_page_by_id(directory: &str, id: &str) -> Result<Page, String> {
     Ok(page)
 }
 
-pub fn create_new_page(directory: &str, id: &str, editor: &str) -> Result<(), String> {
+pub fn create_new_page(directory: &str, id: &str, editor: &str, initial_page: &TemporaryPage) -> Result<(), String> {
     if let Err(err) = is_valid_id(&id) {
         return Err(format!("Invalid ID: {}", err));
     }
@@ -171,7 +171,7 @@ pub fn create_new_page(directory: &str, id: &str, editor: &str) -> Result<(), St
     // Get head id
     let head_id = get_head_id(directory)?;
     
-    let page = Page {
+    let mut page = Page {
         id: id.clone().to_string(),
         header: PageHeader {
             title: id.to_string(),
@@ -185,6 +185,7 @@ pub fn create_new_page(directory: &str, id: &str, editor: &str) -> Result<(), St
         },
         text: String::new(),
     };
+    initial_page.apply(&mut page);
 
     // Edit page
     let page = edit_page(directory, page, editor)?;

@@ -27,16 +27,26 @@ pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> R
 }
 
 pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
-    let id = match matches.value_of("id") {
-        Some(id) => id.to_string(),
+    let (id, memo) = match matches.value_of("id") {
+        Some(id) => (id.to_string(), true),
         None => {
             // Return current date
             let now = Local::now();
-            now.format("%Y-%m-%d").to_string()
+            (now.format("%Y-%m-%d").to_string(), false)
         },
     };
 
-    create_new_page(directory, &id, &config.editor)?;
+    let page = TemporaryPage {
+        header: TemporaryPageHeader {
+            title: id.clone(),
+            insert_title: true,
+            author: "__TEMP1__".to_string(),
+            memo,
+        },
+        text: String::new(),
+    };
+
+    create_new_page(directory, &id, &config.editor, &page)?;
 
     Ok(())
 }
@@ -94,8 +104,17 @@ pub fn diary(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> R
         // Edit if today page file exists
         edit_page_by_id(directory, &id, &config.editor)?;
     } else {
+        let page = TemporaryPage {
+            header: TemporaryPageHeader {
+                title: id.clone(),
+                insert_title: true,
+                author: "__TEMP1__".to_string(),
+                memo: false,
+            },
+            text: String::new(),
+        };
         // Create new if today page file does not exists
-        create_new_page(directory, &id, &config.editor)?;
+        create_new_page(directory, &id, &config.editor, &page)?;
     }
 
     Ok(())
