@@ -4,7 +4,7 @@ extern crate toml;
 extern crate clap;
 extern crate chrono;
 extern crate serde;
-extern crate colored;
+extern crate ansi_term;
 
 use std::path::Path;
 use std::env;
@@ -33,6 +33,8 @@ fn get_app_dir() -> Result<String, failure::Error> {
 }
 
 fn main() {
+    let _enabled = ansi_term::enable_ansi_support();
+
     let matches = App::new("Diary")
         .version("1.0")
         .author("masuke5 <s.zerogoichi@gmail.com>")
