@@ -16,6 +16,8 @@ pub const PAGE_EXTENSION: &str = "page";
 pub const HEAD_FILENAME: &str = "HEAD";
 // Temporary file to edit page
 pub const TEMPORARY_FILE_TO_EDIT: &str = "EDIT_PAGE";
+// Invalid characters in file path
+pub const INVALID_CHARACTERS: [&str; 11] = ["\\", "/", ":", ",", ";", "*", "?", "\"", "<", ">", "|"];
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemporaryPageHeader {
@@ -91,6 +93,11 @@ pub fn is_valid_id(id: &str) -> Result<(), String> {
 
     if id == "NULL" {
         return Err(String::from("`NULL` is unavailable"));
+    }
+
+    // if id contains invalid characters
+    if INVALID_CHARACTERS.iter().any(|c| id.contains(c)) {
+        return Err(format!("invalid character ({})", INVALID_CHARACTERS.join(" ")))
     }
 
     Ok(())
