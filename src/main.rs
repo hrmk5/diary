@@ -5,6 +5,7 @@ extern crate clap;
 extern crate chrono;
 extern crate serde;
 extern crate ansi_term;
+extern crate regex;
 
 use std::path::Path;
 use std::env;

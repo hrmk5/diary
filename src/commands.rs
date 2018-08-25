@@ -1,9 +1,11 @@
+use std::fs;
 use std::process::Command;
 use std::path::Path;
 
 use clap;
 use chrono::{Local};
 use ansi_term::Colour::*;
+use regex::Regex;
 
 use config::Config;
 use utils::*;
@@ -121,7 +123,7 @@ pub fn diary(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> R
 }
 
 pub fn show(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
-    let id = match matches.value_of("id") {
+    let mut id = match matches.value_of("id") {
         Some(id) => id.to_string(),
         None => {
             // Return current date
@@ -129,6 +131,29 @@ pub fn show(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> Re
             now.format("%Y-%m-%d").to_string()
         },
     };
+
+    let path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", id, PAGE_EXTENSION));
+    if !path.exists() {
+        // search by regex
+        let re = Regex::new(&id).map_err(|err| format!("Invalid regex: {}", err))?;
+        let pages_dir = Path::new(directory).join(PAGES_DIR);
+        let path_list = fs::read_dir(&pages_dir)
+            .map_err(|err| format!("Unable to list files in directory `{}`: {}", pages_dir.to_string_lossy(), err))?;
+
+        let mut matched = false;
+        for path in path_list {
+            let path = path.unwrap().path();
+            let name = path.file_stem().unwrap().to_str().unwrap();
+            if re.is_match(name) {
+                id = name.to_string();
+                matched = true;
+            }
+        }
+
+        if !matched {
+            return Err(String::from("Not found"));
+        }
+    }
 
     let page = get_page_by_id(directory, &id)?;
 
