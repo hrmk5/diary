@@ -15,14 +15,15 @@ pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> R
 
     let mut prev_id = head_id;
     loop {
+        if prev_id == "NULL" {
+            break;
+        }
+
         let page = get_page_by_id(directory, &prev_id)?;
 
         println!("{} ({})", page.header.title, Yellow.paint(page.id));
 
         prev_id = page.header.prev;
-        if prev_id == "NULL" {
-            break;
-        }
     }
 
     Ok(())
@@ -172,6 +173,10 @@ pub fn search(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> 
 
     let mut prev_id = head_id;
     loop {
+        if prev_id == "NULL" {
+            break;
+        }
+
         let page = get_page_by_id(directory, &prev_id)?;
 
         // Search
@@ -180,9 +185,6 @@ pub fn search(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> 
         }
 
         prev_id = page.header.prev;
-        if prev_id == "NULL" {
-            break;
-        }
     }
 
     Ok(())

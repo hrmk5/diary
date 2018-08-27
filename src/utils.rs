@@ -201,10 +201,12 @@ pub fn create_new_page(directory: &str, id: &str, editor: &str, initial_page: &T
     write_page(directory, &id, &page)?;
 
     // Update next of head page
-    let mut head_page = get_page_by_id(directory, &head_id)?;
-    head_page.header.next = id.clone().to_string();
+    if head_id != "NULL" {
+        let mut head_page = get_page_by_id(directory, &head_id)?;
+        head_page.header.next = id.clone().to_string();
 
-    write_page(directory, &head_id, &head_page)?;
+        write_page(directory, &head_id, &head_page)?;
+    }
 
     // Update head file
     let head_path = Path::new(directory).join(HEAD_FILENAME);   

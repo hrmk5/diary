@@ -7,6 +7,8 @@ extern crate serde;
 extern crate ansi_term;
 extern crate regex;
 
+use std::fs;
+use std::io::Write;
 use std::path::Path;
 use std::env;
 
@@ -18,6 +20,8 @@ mod page;
 mod config;
 mod commands;
 mod utils;
+
+use utils::{PAGES_DIR, HEAD_FILENAME};
 
 fn get_app_dir() -> Result<String, failure::Error> {
     if cfg!(target_os = "windows") {
@@ -66,7 +70,56 @@ fn main() {
 
     // Load config
     let app_dir = get_app_dir().unwrap();
-    let config_path = Path::new(&app_dir).join("config.toml");
+
+    // create config.toml and `pages` directory and head file if app directory does not exists
+    let app_dir_path = Path::new(&app_dir);
+    let config_path = app_dir_path.join("config.toml");
+    if !app_dir_path.exists() {
+        // create app directory
+        if let Err(err) = fs::create_dir(app_dir_path) {
+            println!("Unable to create directory `{}`: {}", app_dir_path.to_string_lossy(), err);
+            return;
+        }
+
+        // create config
+        let initial_config_toml = "editor = 'vim'";
+        let mut config_file = match fs::File::create(&config_path) {
+            Ok(file) => file,
+            Err(err) => {
+                println!("Unable to create config `{}`: {}", config_path.to_string_lossy(), err);
+                return;
+            },
+        };
+
+        if let Err(err) = config_file.write_all(initial_config_toml.as_bytes()) {
+            println!("Unable to write initial config toml: {}", err);
+            return;
+        }
+
+        // create pages directory
+        let pages_path = app_dir_path.join(PAGES_DIR);
+        if let Err(err) = fs::create_dir(&pages_path) {
+            println!("Unable to create directory `{}`: {}", pages_path.to_string_lossy(), err);
+            return;
+        }
+
+        // create config
+        let initial_head = "NULL";
+        let head_path = app_dir_path.join(HEAD_FILENAME);
+        let mut head_file = match fs::File::create(&head_path) {
+            Ok(file) => file,
+            Err(err) => {
+                println!("Unable to create head file `{}`: {}", head_path.to_string_lossy(), err);
+                return;
+            },
+        };
+
+        if let Err(err) = head_file.write_all(initial_head.as_bytes()) {
+            println!("Unable to write initial head id: {}", err);
+            return;
+        }
+    }
+
     let config_path = config_path.as_path();
     let config = match Config::load_from_file(config_path) {
         Ok(config) => config,
