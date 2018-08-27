@@ -33,7 +33,6 @@ impl From<toml::ser::Error> for PageError {
 pub struct PageHeader {
     pub title: String,
     pub insert_title: bool,
-    pub author: String,
     pub created: DateTime<Utc>,
     pub updated: Vec<DateTime<Utc>>,
     pub memo: bool,
@@ -88,7 +87,6 @@ mod tests {
             header: PageHeader {
                 title: "taitoru".to_string(),
                 insert_title: true,
-                author: "a".to_string(),
                 created: Utc.ymd(2018, 8, 15).and_hms(17, 52, 11),
                 updated: vec![Utc.ymd(2018, 8, 15).and_hms(17, 52, 44)],
                 memo: true,
@@ -101,7 +99,6 @@ mod tests {
         let expected = r#"---
 title = "taitoru"
 insert_title = true
-author = "a"
 created = "2018-08-15T17:52:11Z"
 updated = ["2018-08-15T17:52:44Z"]
 memo = true

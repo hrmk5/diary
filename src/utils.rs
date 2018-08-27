@@ -23,7 +23,6 @@ pub const INVALID_CHARACTERS: [&str; 11] = ["\\", "/", ":", ",", ";", "*", "?", 
 pub struct TemporaryPageHeader {
     pub title: String,
     pub insert_title: bool,
-    pub author: String,
     pub memo: bool,
 }
 
@@ -32,7 +31,6 @@ impl TemporaryPageHeader {
         TemporaryPageHeader {
             title: header.title.clone(),
             insert_title: header.insert_title,
-            author: header.author.clone(),
             memo: header.memo,
         }
     }
@@ -79,7 +77,6 @@ impl TemporaryPage {
     pub fn apply(&self, page: &mut Page) {
         page.header.title = self.header.title.clone();
         page.header.insert_title = self.header.insert_title.clone();
-        page.header.author = self.header.author.clone();
         page.header.memo = self.header.memo.clone();
         page.text = self.text.clone();
     }
@@ -183,7 +180,6 @@ pub fn create_new_page(directory: &str, id: &str, editor: &str, initial_page: &T
         header: PageHeader {
             title: id.to_string(),
             insert_title: true,
-            author: "__TEMP1__".to_string(),
             created: Utc::now(),
             updated: Vec::new(),
             memo: true,

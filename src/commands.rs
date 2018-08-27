@@ -43,7 +43,6 @@ pub fn create_new(directory: &str, config: &Config, matches: &clap::ArgMatches) 
         header: TemporaryPageHeader {
             title: id.clone(),
             insert_title: true,
-            author: "__TEMP1__".to_string(),
             memo,
         },
         text: String::new(),
@@ -111,7 +110,6 @@ pub fn diary(directory: &str, config: &Config, _matches: &clap::ArgMatches) -> R
             header: TemporaryPageHeader {
                 title: id.clone(),
                 insert_title: true,
-                author: "__TEMP1__".to_string(),
                 memo: false,
             },
             text: String::new(),
