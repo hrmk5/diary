@@ -38,6 +38,7 @@ fn get_app_dir() -> Result<String, failure::Error> {
 }
 
 fn main() {
+    #[cfg(windows)]
     let _enabled = ansi_term::enable_ansi_support();
 
     let matches = App::new("Diary")
