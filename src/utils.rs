@@ -291,3 +291,37 @@ pub fn write_page(directory: &str, id: &str, page: &Page) -> Result<(), String> 
 
     Ok(())
 }
+
+pub fn edit_id(directory: &str, prev_id: &str, next_id: &str) -> Result<(), String> {
+    if let Err(err) = is_valid_id(next_id) {
+        return Err(format!("Invalid ID `{}`: {}", next_id, err));
+    }
+
+    let next_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", next_id, PAGE_EXTENSION));
+    if next_path.exists() {
+        return Err(format!("`{}` exists.", next_id));
+    }
+
+    let page = get_page_by_id(directory, prev_id)?;
+    let page_path = Path::new(directory).join(PAGES_DIR).join(format!("{}.{}", prev_id, PAGE_EXTENSION));
+    fs::rename(page_path, next_path)
+        .map_err(|err| format!("Unable to rename file from `{}` to `{}`: {}", prev_id, next_id, err))?;
+
+    if page.header.prev != "NULL" {
+        let mut prev_page = get_page_by_id(directory, &page.header.prev)?;
+        prev_page.header.next = String::from(next_id);
+        write_page(directory, &prev_page.id, &prev_page)?;
+    }
+
+    if page.header.next != "NULL" {
+        let mut next_page = get_page_by_id(directory, &page.header.next)?;
+        next_page.header.prev = String::from(next_id);
+        write_page(directory, &next_page.id, &next_page)?;
+    } else {
+        // Update HEAD
+        write_file(&Path::new(directory).join(HEAD_FILENAME), next_id)
+            .map_err(|err| format!("Unable to update HEAD: {}", err))?;
+    }
+
+    Ok(())
+}

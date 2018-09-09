@@ -67,6 +67,14 @@ fn main() {
                          .index(1)
                          .required(true))
                     .about("search from all pages"))
+        .subcommand(SubCommand::with_name("editid")
+                    .arg(Arg::with_name("prev_id")
+                         .index(1)
+                         .required(true))
+                    .arg(Arg::with_name("next_id")
+                         .index(2)
+                         .required(true))
+                    .about("edit id"))
         .get_matches();
 
     // Load config
@@ -138,6 +146,7 @@ fn main() {
         Some("config") => commands::config,
         Some("show") => commands::show,
         Some("search") => commands::search,
+        Some("editid") => commands::editid,
         _ => commands::diary,
     };
 

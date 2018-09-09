@@ -187,3 +187,12 @@ pub fn search(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> 
 
     Ok(())
 }
+
+pub fn editid(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
+    let prev_id = matches.value_of("prev_id").unwrap();
+    let next_id = matches.value_of("next_id").unwrap();
+
+    edit_id(directory, prev_id, next_id)?;
+
+    Ok(())
+}
