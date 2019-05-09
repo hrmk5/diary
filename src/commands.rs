@@ -185,6 +185,8 @@ pub fn search(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> 
     let query = matches.value_of("query").unwrap();
     let head_id = get_head_id(directory)?;
 
+    let is_title = matches.is_present("title");
+
     let mut prev_id = head_id;
     loop {
         if prev_id == "NULL" {
@@ -193,9 +195,14 @@ pub fn search(directory: &str, _config: &Config, matches: &clap::ArgMatches) -> 
 
         let page = get_page_by_id(directory, &prev_id)?;
 
-        // Search
-        if page.text.contains(query) {
-            println!("{} ({})", page.header.title, Yellow.paint(page.id));
+        if is_title {
+            if page.header.title.contains(query) {
+                println!("{} ({})", page.header.title, Yellow.paint(page.id));
+            }
+        } else {
+            if page.text.contains(query) || page.header.title.contains(query) {
+                println!("{} ({})", page.header.title, Yellow.paint(page.id));
+            }
         }
 
         prev_id = page.header.prev;
