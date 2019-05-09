@@ -46,8 +46,17 @@ fn main() {
         .author("masuke5 <s.zerogoichi@gmail.com>")
         .subcommand(SubCommand::with_name("ls")
                     .about("list diary")
-                    .arg(Arg::with_name("--no-color")
-                         .help("disable color")))
+                    .arg(Arg::with_name("no-color")
+                         .long("no-color")
+                         .help("disable color"))
+                    .arg(Arg::with_name("n")
+                         .takes_value(true)
+                         .short("n")
+                         .help("page count"))
+                    .arg(Arg::with_name("skip")
+                         .takes_value(true)
+                         .long("skip")
+                         .help("skip")))
         .subcommand(SubCommand::with_name("new")
                     .arg(Arg::with_name("id")
                          .index(1))
@@ -91,7 +100,7 @@ fn main() {
         }
 
         // create config
-        let initial_config_toml = "editor = 'vim'";
+        let initial_config_toml = "editor = 'vim'\nlist_max_count = 7";
         let mut config_file = match fs::File::create(&config_path) {
             Ok(file) => file,
             Err(err) => {

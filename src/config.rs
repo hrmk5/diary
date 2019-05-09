@@ -8,6 +8,7 @@ use failure;
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub editor: String,
+    pub list_max_count: u32,
 }
 
 impl Config {

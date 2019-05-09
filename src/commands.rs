@@ -10,20 +10,36 @@ use regex::Regex;
 use config::Config;
 use utils::*;
 
-pub fn list(directory: &str, _config: &Config, _matches: &clap::ArgMatches) -> Result<(), String> {
+pub fn list(directory: &str, config: &Config, matches: &clap::ArgMatches) -> Result<(), String> {
     let head_id = get_head_id(directory)?;
+    let page_count = match matches.value_of("n") {
+        Some(n) => n.parse::<u32>().unwrap_or(config.list_max_count),
+        None => config.list_max_count,
+    };
+    let skip = match matches.value_of("skip") {
+        Some(skip) => skip.parse::<i32>().unwrap_or(0),
+        None => 0,
+    };
 
     let mut prev_id = head_id;
+    let mut i = 0;
     loop {
+        if i >= page_count as i32 + skip {
+            break;
+        }
+
         if prev_id == "NULL" {
             break;
         }
 
         let page = get_page_by_id(directory, &prev_id)?;
 
-        println!("{} ({})", page.header.title, Yellow.paint(page.id));
+        if i >= skip {
+            println!("{} ({})", page.header.title, Yellow.paint(page.id));
+        }
 
         prev_id = page.header.prev;
+        i += 1;
     }
 
     Ok(())
